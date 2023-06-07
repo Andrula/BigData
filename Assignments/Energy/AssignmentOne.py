@@ -30,17 +30,26 @@ def storeData(filename, dictList):
             w = csv.DictWriter(f, dictList[0].keys()) 
             if not fileExist: w.writeheader()
             w.writerows(dictList)
+            print("Writing data!")
         sleep(1)
     oldDict = dictList
 
-
+async def timeout():
+    for i in range(1, 11):
+        await asyncio.sleep(1)
+        print(i)
+    for i in range(11,271):
+        await asyncio.sleep(1)
+        print(i)
+    for i in range(1, 11):
+        print(i)
 
 async def main():
     try:
         while True:
             data = await getData()
             storeData("Data/EnergyDataPer5Min.csv", data)
-            await asyncio.sleep(300)  # Sleep for 5 minutes before fetching data again
+            await timeout()  # Sleep for 5 minutes before fetching data again
     except Exception as ex:
         print(f"An exception has occoured!: {ex}")
 
