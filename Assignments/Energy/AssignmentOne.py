@@ -4,6 +4,9 @@ import requests
 from time import sleep
 import csv
 import os.path
+import datetime
+
+sleepDelay = int()
 
 
 async def getData():
@@ -15,39 +18,75 @@ async def getData():
             return records                    
 
 oldDict = []
-
 def storeData(filename, dictList):
     """
     Store a list of dicts as CSV file
-    filename: Name of file to store data in 
+    filename: Name of file to store data in
     """
     global oldDict
-    
-    if not oldDict == dictList:
+    global sleepDelay
+
+    # Creates a variable that extracts the UTC and DK timestamps from the new data
+    newTimestamps = [(record['Minutes5UTC'], record['Minutes5DK']) for record in dictList]
+
+    # Creates a variable that extracts the UTC and DK timestamps from the old data
+    oldTimestamps = [(record['Minutes5UTC'], record['Minutes5DK']) for record in oldDict]
+
+    while set (newTimestamps) == set(oldTimestamps):
+       sleep(5)
+       sleepDelay -= 5
+
+    else:
         fileExist = os.path.exists(filename)
 
-        with open(filename, 'a', newline='') as f:  
-            w = csv.DictWriter(f, dictList[0].keys()) 
-            if not fileExist: w.writeheader()
+        with open(filename, 'a+', newline='') as f:
+            w = csv.DictWriter(f, dictList[0].keys())
+
+            # Checks if file already exists and if it doesn't, create the header.
+            if not fileExist:
+                w.writeheader()
+            
+            # Writes to the fil
             w.writerows(dictList)
             print("Writing data!")
+
         sleep(1)
-    oldDict = dictList
+        oldDict = dictList
+
+def checkData(filename, dictList):
+    global oldDict
+    global sleepDelay
+    print("1")
+    fileExist = os.path.exists(filename)
+
+    if fileExist:
+        print("2")
+        # Creates a variable that extracts the UTC and DK timestamps from the new data
+        nyTimestamps = [(record['Minutes5UTC'], record['Minutes5DK']) for record in dictList]
+
+        # Creates a variable that extracts the UTC and DK timestamps from the old data
+        gamTimestamps = [(record['Minutes5UTC'], record['Minutes5DK']) for record in oldDict]
+
+        if set(nyTimestamps) == set(gamTimestamps):
+            print("Data is the same")
+
+        
+
 
 async def timeout():
-    for i in range(1, 11):
+    global sleepDelay
+    for i in range(1, sleepDelay +1):
+        print(i)
         await asyncio.sleep(1)
-        print(i)
-    for i in range(11,271):
-        await asyncio.sleep(1)
-        print(i)
-    for i in range(1, 11):
-        print(i)
 
 async def main():
+    global sleepDelay
+    data = await getData()
+    checkData("Data/EnergyDataPer5Min.csv", data)
     try:
         while True:
             data = await getData()
+            sleepDelay = 280
             storeData("Data/EnergyDataPer5Min.csv", data)
             await timeout()  # Sleep for 5 minutes before fetching data again
     except Exception as ex:
